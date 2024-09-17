@@ -1,4 +1,4 @@
-from capstone import Cs, CS_ARCH_X86, CS_MODE_32
+from capstone import Cs, CS_ARCH_X86, CS_MODE_32, CS_MODE_64
 from pefile import PE
 from sys import argv
 
@@ -6,6 +6,7 @@ from sys import argv
 
 # == Disassembler Class ================================================================================================
 # See https://github.com/erocarrera/pefile/blob/wiki/UsageExamples.md#introduction
+# See https://www.capstone-engine.org/lang_python.html
 class Disassembler(object):
     def __init__(self, inputFile: str) -> None:
         self.exeName      = inputFile
@@ -26,17 +27,14 @@ class Disassembler(object):
 
 
 
-    def disassemble(self) -> None:
+    def disassemble(self, printAddress: bool = False) -> None:
         exeCode = self.executable.get_memory_mapped_image()[self.textSecStart:self.textSecEnd]
-        for instruction in self.disassembler.disasm(exeCode, self.textSecStart):
-            print(f"{hex(instruction.address)}: {instruction.mnemonic} {instruction.op_str}")
-        '''
-        entryPoint = self.executable.OPTIONAL_HEADER.AddressOfEntryPoint
-        epVirtualAddress = self.executable.OPTIONAL_HEADER.ImageBase
-        executableCode = self.executable.get_memory_mapped_image()[entryPoint:entryPoint+1000]
-        for instruction in self.disassembler.disasm(executableCode, epVirtualAddress):
-            print(f"{hex(instruction.address)}: {instruction.mnemonic} {instruction.op_str}")
-        '''
+        epVirtualAddress = self.executable.OPTIONAL_HEADER.ImageBase + self.textSecStart
+        for instruction in self.disassembler.disasm(exeCode, epVirtualAddress):
+            if printAddress:
+                print(f"{hex(instruction.address)}: {instruction.mnemonic} {instruction.op_str.replace(' ', '')}")
+            else:
+                print(f"{instruction.mnemonic} {instruction.op_str.replace(' ', '')}")
 
 
 
@@ -48,4 +46,4 @@ class Disassembler(object):
 # == Main ==============================================================================================================
 if __name__ == "__main__":
     disasm = Disassembler(argv[1])
-    disasm.disassemble()
+    disasm.disassemble(True)
