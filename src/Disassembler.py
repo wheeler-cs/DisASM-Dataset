@@ -69,6 +69,7 @@ class Disassembler(object):
         self._disasmData: List[str] = list()
 
         # Code to setup class
+        self._disassembler.skipdata = True # <-- Needed to keep going, even at `nop` instructions
         self.getTextSection()
         self.disassemble()
 
