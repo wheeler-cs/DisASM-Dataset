@@ -88,8 +88,8 @@ class Disassembler(object):
         for section in self._executable.sections:
             # Linearly search for the 8-byte name of the .text section
             if(section.Name == b".text\0\0\0"):
-                self.textSecStart = section.VirtualAddress
-                self.textSecEnd = section.VirtualAddress + section.Misc_VirtualSize
+                self._textSecStart = section.VirtualAddress
+                self._textSecEnd = section.VirtualAddress + section.Misc_VirtualSize
 
 
     ##
@@ -110,9 +110,9 @@ class Disassembler(object):
     #
     def disassemble(self, includeAddress: bool = False) -> None:
         # Pull the executable code from the PE file
-        exeCode = self._executable.get_memory_mapped_image()[self.textSecStart:self.textSecEnd]
+        exeCode = self._executable.get_memory_mapped_image()[self._textSecStart:self._textSecEnd]
         # Get the entry point virtual address to ensure the correct address offset appears
-        epVirtualAddress = self._executable.OPTIONAL_HEADER.ImageBase + self.textSecStart
+        epVirtualAddress = self._executable.OPTIONAL_HEADER.ImageBase + self._textSecStart
         # Iterate over machine code and convert to assembly
         for instruction in self._disassembler.disasm(exeCode, epVirtualAddress):
             if includeAddress:
