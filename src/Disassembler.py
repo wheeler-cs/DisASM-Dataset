@@ -115,10 +115,11 @@ class Disassembler(object):
         epVirtualAddress = self._executable.OPTIONAL_HEADER.ImageBase + self._textSecStart
         # Iterate over machine code and convert to assembly
         for instruction in self._disassembler.disasm(exeCode, epVirtualAddress):
+            instructionString = ""
             if includeAddress:
-                self._disasmData.append(f"{hex(instruction.address)}: {instruction.mnemonic} {instruction.op_str.replace(' ', '')}")
-            else:
-                self._disasmData.append(f"{instruction.mnemonic} {instruction.op_str.replace(' ', '')}")
+                instructionString = f"{hex(instruction.address)}: "
+            instructionString += f"{instruction.mnemonic} {instruction.op_str.replace(' ', '')}"
+            self._disasmData.append(instructionString)
 
 
     ##
@@ -130,10 +131,10 @@ class Disassembler(object):
     # Assembly code can be stored on the disk as a text file for future access or usage by another program. Each
     # instruction and its operands are given a single line in the output file.
     #
-    def dumpAssembly(self, outputFile: str = "out.asm") -> None:
+    def dumpAssembly(self, outputFile: str = "out.asm", delimiter: str = '\n') -> None:
         with open(outputFile, "w+") as disasmWrite:
             for instruction in self._disasmData:
-                disasmWrite.write(f"{instruction}\n")
+                disasmWrite.write(f"{instruction}{delimiter}")
 
 
     ##
@@ -149,4 +150,4 @@ class Disassembler(object):
 # == Main ==============================================================================================================
 if __name__ == "__main__":
     disasm = Disassembler(argv[1])
-    disasm.dumpAssembly("data/out.disasm")
+    disasm.dumpAssembly("data/out.disasm", ' ')
