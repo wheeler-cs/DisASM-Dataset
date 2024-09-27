@@ -1,16 +1,24 @@
 ##
-#
+# @package ProcessManager
+# Package containing definitions for ProcessManager class.
 #
 
 # == Imports ===========================================================================================================
 from multiprocessing import Process
-from sys import argv
-from time import sleep
+from typing import List
 
 
 
 # == Exceptions ========================================================================================================
+##
+# Exception intended to be used in the event adding a new process to ProcessManager's queue fails.
+#
 class ProcessEnqueueException(Exception):
+    ##
+    # Exception class initializer called when an exception of this type is raised.
+    #
+    # @param message Informational message to be associated with exception.
+    #
     def __init__(self, message: str) -> None:
         super().__init__(message)
 
@@ -20,7 +28,7 @@ class ProcessEnqueueException(Exception):
 class ProcessManager(object):
     def __init__(self, processCeiling: int = 1) -> None:
         self._processCeiling: int = processCeiling
-        self._processList = list()
+        self._processList: List[Process] = list()
 
 
     def addProcess(self, function, args = ()) -> None:
@@ -44,17 +52,7 @@ class ProcessManager(object):
             p.close()
 
 
-def testPrint() -> None:
-    sleep(10)
-
-        
-
-
 
 # == Main ==============================================================================================================
 if __name__ == "__main__":
-    pm = ProcessManager(int(argv[1]))
-    for i in range(0, int(argv[1])):
-        pm.addProcess(testPrint, ())
-    pm.startBatch()
-    pm.awaitBatch()
+    print("The ProcessManager class is intended to be used as part of a module.")
