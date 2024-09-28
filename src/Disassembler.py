@@ -31,18 +31,18 @@ class Disassembler(object):
     # @param self Pointer to the new class instance.
     # @param inputFile The target executable file to be associated with the class instance.
     #
-    def __init__(self, inputFile: str) -> None:
+    def __init__(self, inputFile: str = "") -> None:
         ##
         # @var _exeName
         # File name of target executable for Disassembler instance.
         #
-        self._exeName: str = inputFile
+        self._exeName: str = ""
 
         ##
         # @var _executable
         # PE abstracted from the binary file using the `pefile` package.
         #
-        self._executable: PE = PE(self._exeName, fast_load=True)
+        self._executable: PE = None # type: ignore
 
         ##
         # @var _disassembler
@@ -70,8 +70,12 @@ class Disassembler(object):
 
         # Code to setup class
         self._disassembler.skipdata = True # <-- Needed to keep going, even at `nop` instructions
-        self.getTextSection()
-        self.disassemble()
+
+        # Prepare class if an input file was provided
+        if inputFile != "":
+            self._exeName = inputFile
+            self._executable = PE(self._exeName, fast_load=True)
+            self.disassemble()
 
 
     ##
@@ -109,6 +113,7 @@ class Disassembler(object):
     # to do.
     #
     def disassemble(self, includeAddress: bool = False) -> None:
+        self.getTextSection()
         # Pull the executable code from the PE file
         exeCode = self._executable.get_memory_mapped_image()[self._textSecStart:self._textSecEnd]
         # Get the entry point virtual address to ensure the correct address offset appears
@@ -135,6 +140,24 @@ class Disassembler(object):
         with open(outputFile, "w+") as disasmWrite:
             for instruction in self._disasmData:
                 disasmWrite.write(f"{instruction}{delimiter}")
+
+
+
+    ##
+    #
+    #
+    def changeTarget(self, inputFile: str) -> None:
+        self._exeName = inputFile
+        self._executable = PE(self._exeName, fast_load=True)
+        self.disassemble(False)
+
+    ##
+    #
+    #
+    def processList(self, inputList: List[str], outputDir: str) -> None:
+        for element in inputList:
+            self.changeTarget(element)
+            self.dumpAssembly(outputDir + element + ".disasm", '\n')
 
 
     ##
