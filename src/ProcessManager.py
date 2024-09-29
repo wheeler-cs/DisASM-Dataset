@@ -4,7 +4,7 @@
 #
 
 # == Imports ===========================================================================================================
-from multiprocessing import Process
+from threading import Thread
 from typing import List
 
 
@@ -36,7 +36,7 @@ class ProcessManager(object):
             raise(ProcessEnqueueException(message="Cannot instantiate new process: Manager queue is full."))
         else:
             try:
-                self._processList.append(Process(target=function, args=args))
+                self._processList.append(Thread(target=function, args=args))
             except Exception as e:
                 raise(ProcessEnqueueException(message="Cannot instantiate new process: Process spawning failed."))
             
@@ -49,7 +49,6 @@ class ProcessManager(object):
     def awaitBatch(self) -> None:
         for p in self._processList:
             p.join()
-            p.close()
 
 
 
