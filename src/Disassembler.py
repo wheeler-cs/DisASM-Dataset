@@ -10,7 +10,7 @@
 ## @see https://www.capstone-engine.org/lang_python.html
 from capstone import Cs, CS_ARCH_X86, CS_MODE_32, CS_MODE_64
 ## @see https://github.com/erocarrera/pefile/blob/wiki/UsageExamples.md#introduction
-from pefile import PE
+from pefile import PE, PEFormatError
 from sys import argv
 from typing import List
 
@@ -148,8 +148,14 @@ class Disassembler(object):
     #
     def changeTarget(self, inputFile: str) -> None:
         self._exeName = inputFile
-        self._executable = PE(self._exeName, fast_load=True)
-        self.disassemble(False)
+        # Some ".exe" files may not actually be in the PE format
+        try:
+            self._executable = PE(self._exeName, fast_load=True)
+            self.disassemble(False)
+        except PEFormatError:
+            print(f"Couldn't parse {self._exeName} due to formatting")
+        except Exception as e:
+            print(f"Couldn't parse {self._exeName} for {e}")
 
     ##
     #
