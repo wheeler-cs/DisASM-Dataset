@@ -28,7 +28,7 @@ class ProcessEnqueueException(Exception):
 class ProcessManager(object):
     def __init__(self, processCeiling: int = 1) -> None:
         self._processCeiling: int = processCeiling
-        self._processList: List[Process] = list()
+        self._processList: List[Thread] = list()
 
 
     def addProcess(self, function, args = ()) -> None:
