@@ -31,18 +31,24 @@ class Disassembler(object):
     # @param self Pointer to the new class instance.
     # @param inputFile The target executable file to be associated with the class instance.
     #
-    def __init__(self, inputFile: str = "") -> None:
+    def __init__(self, inputFile: str = "", instructionLimit: int = 10_000) -> None:
         ##
         # @var _exeName
         # File name of target executable for Disassembler instance.
         #
-        self._exeName: str = ""
+        self._exeName: str = inputFile
 
         ##
         # @var _executable
         # PE abstracted from the binary file using the `pefile` package.
         #
         self._executable: PE = None # type: ignore
+
+        ##
+        # @var _instructionLimit
+        # Maximum number of instruction to extract from the provided executable.
+        #
+        self._instructionLimit: int = instructionLimit
 
         ##
         # @var _disassembler
@@ -72,8 +78,7 @@ class Disassembler(object):
         self._disassembler.skipdata = True # <-- Needed to keep going, even at `nop` instructions
 
         # Prepare class if an input file was provided
-        if inputFile != "":
-            self._exeName = inputFile
+        if self._exeName != "":
             self._executable = PE(self._exeName, fast_load=True)
             self.disassemble()
 
@@ -112,19 +117,20 @@ class Disassembler(object):
     # engine is implemented to facilitate this process and making handling different architectures and word sizes easier
     # to do.
     #
-    def disassemble(self, includeAddress: bool = False) -> None:
+    def disassemble(self) -> None:
         self.getTextSection()
         # Pull the executable code from the PE file
         exeCode = self._executable.get_memory_mapped_image()[self._textSecStart:self._textSecEnd]
         # Get the entry point virtual address to ensure the correct address offset appears
         epVirtualAddress = self._executable.OPTIONAL_HEADER.ImageBase + self._textSecStart
         # Iterate over machine code and convert to assembly
-        for instruction in self._disassembler.disasm(exeCode, epVirtualAddress):
-            instructionString = ""
-            if includeAddress:
-                instructionString = f"{hex(instruction.address)}: "
-            instructionString += f"{instruction.mnemonic} {instruction.op_str.replace(' ', '')}"
-            self._disasmData.append(instructionString)
+        limit = 10_000
+        for instruction in self._disassembler.disasm_lite(exeCode, epVirtualAddress):
+            instruction = ' '.join(instruction[2:])
+            limit -= 1
+            self._disasmData.append(instruction)
+            if limit <= 0:
+                break
 
 
     ##
@@ -151,7 +157,7 @@ class Disassembler(object):
         # Some ".exe" files may not actually be in the PE format
         try:
             self._executable = PE(self._exeName, fast_load=True)
-            self.disassemble(False)
+            self.disassemble()
         except PEFormatError:
             print(f"Couldn't parse {self._exeName} due to formatting")
         except Exception as e:
@@ -163,7 +169,7 @@ class Disassembler(object):
     def processList(self, inputList: List[str], outputDir: str) -> None:
         for element in inputList:
             self.changeTarget(element)
-            self.dumpAssembly(outputDir + element + ".disasm", '\n')
+            self.dumpAssembly(outputDir + element + ".txt", '\n')
 
 
     ##
