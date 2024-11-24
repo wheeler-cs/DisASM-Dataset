@@ -156,6 +156,7 @@ class Disassembler(object):
         self._exeName = inputFile
         # Some ".exe" files may not actually be in the PE format
         try:
+            self._disasmData[:] = []
             self._executable = PE(self._exeName, fast_load=True)
             self.disassemble()
         except PEFormatError:
