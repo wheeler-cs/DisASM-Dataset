@@ -9,9 +9,11 @@
 # == Imports ===========================================================================================================
 ## @see https://www.capstone-engine.org/lang_python.html
 from capstone import Cs, CS_ARCH_X86, CS_MODE_32, CS_MODE_64
+import os
 ## @see https://github.com/erocarrera/pefile/blob/wiki/UsageExamples.md#introduction
 from pefile import PE, PEFormatError
 from sys import argv
+from tqdm import tqdm
 from typing import List
 
 
@@ -124,7 +126,7 @@ class Disassembler(object):
         # Get the entry point virtual address to ensure the correct address offset appears
         epVirtualAddress = self._executable.OPTIONAL_HEADER.ImageBase + self._textSecStart
         # Iterate over machine code and convert to assembly
-        limit = 10_000
+        limit = self._instructionLimit
         for instruction in self._disassembler.disasm_lite(exeCode, epVirtualAddress):
             instruction = ' '.join(instruction[2:])
             limit -= 1
@@ -168,9 +170,12 @@ class Disassembler(object):
     #
     #
     def processList(self, inputList: List[str], outputDir: str) -> None:
-        for element in inputList:
+        for element in tqdm(inputList):
             self.changeTarget(element)
-            self.dumpAssembly(outputDir + element + ".txt", '\n')
+            parsedName = os.path.split(element)
+            higherDir = '/'.join(parsedName[:-1])
+            newName = os.path.join(higherDir, "disasm", (parsedName[-1] + ".disasm"))
+            self.dumpAssembly(newName, '\n')
 
 
     ##
