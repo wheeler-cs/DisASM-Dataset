@@ -145,9 +145,10 @@ class Disassembler(object):
     # instruction and its operands are given a single line in the output file.
     #
     def dumpAssembly(self, outputFile: str = "out.asm", delimiter: str = '\n') -> None:
-        with open(outputFile, "w+") as disasmWrite:
-            for instruction in self._disasmData:
-                disasmWrite.write(f"{instruction}{delimiter}")
+        if len(self._disasmData) > 0: # Keep from saving empty files
+            with open(outputFile, "w+") as disasmWrite:
+                for instruction in self._disasmData:
+                    disasmWrite.write(f"{instruction}{delimiter}")
 
 
 
@@ -161,8 +162,9 @@ class Disassembler(object):
             self._disasmData[:] = []
             self._executable = PE(self._exeName, fast_load=True)
             self.disassemble()
-        except PEFormatError:
-            print(f"Couldn't parse {self._exeName} due to formatting")
+        except PEFormatError as e:
+            pass
+            #print(f"Couldn't parse {self._exeName} due to formatting ({e})")
         except Exception as e:
             print(f"Couldn't parse {self._exeName} for {e}")
 
