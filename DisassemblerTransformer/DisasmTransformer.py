@@ -57,11 +57,15 @@ class DisasmTransformer():
     
 
     def prepareDatasets(self) -> None:
-        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=16, collate_fn=gDataCollator)
-        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=16, collate_fn=gDataCollator)
+        print("    Preparing Datasets for Training (this may take a very long time)...")
+        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=32, collate_fn=gDataCollator)
+        print("    [Training Dataset Preparation Completed]")
+        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=32, collate_fn=gDataCollator)
+        print("    [Testing Dataset Preparation Completed]")
 
 
     def prepareModel(self) -> None:
+        print("    Compiling Model for Training...")
         self.model.compile(optimizer=self.optimizer)
     
 

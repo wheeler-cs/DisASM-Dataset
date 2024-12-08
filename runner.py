@@ -53,9 +53,7 @@ def parseArgv() -> argparse.Namespace:
                         default=5)
     parser.add_argument("-fc", "--forcecpu",
                         help="Force transformer training to only use CPU",
-                        type=bool,
-                        required=False,
-                        default=True)
+                        required=False)
     return parser.parse_args()
 
 
@@ -113,7 +111,7 @@ def callTransformer(argv: argparse.Namespace):
     print("[RUNNING TRANSFORMER]")
     # Importing tensorflow slows down the disassembler, even though it's not needed for that operation
     from DisassemblerTransformer.DisasmTransformer import DisasmTransformer
-    if argv.forcecpu:
+    if argv.forcecpu is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     dt = DisasmTransformer(argv.input, argv.batchsize, argv.epochs)
     dt.prepareDatasets()
