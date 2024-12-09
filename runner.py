@@ -7,6 +7,7 @@ from DisassemblerPipeline.ProcessManager import ProcessManager
 import argparse
 from numpy import array_split, ndarray
 import os
+from tqdm import tqdm
 from typing import List
 
 
@@ -17,7 +18,7 @@ def parseArgv() -> argparse.Namespace:
     # Shared arguments
     parser.add_argument("-m", "--mode",
                         help="The mode of operation the program should run in",
-                        choices=["generator", "transformer"],
+                        choices=["evaluator", "generator", "transformer"],
                         type=str,
                         required=True)
     parser.add_argument("-i", "--input",
@@ -86,6 +87,20 @@ def createOutDirectory(originalDir: str, subdir: str) -> None:
     os.makedirs(os.path.join(originalDir, subdir), exist_ok=True)
 
 
+# === Evaluator Mode Functions =========================================================================================
+def callEvaluator(argv: argparse.Namespace) -> None:
+    fileList = createFileList(argv.input, argv.extension)
+    instrList = []
+    for file in tqdm(fileList):
+        with open(file, "r") as disasm:
+            for line in disasm:
+                if(line[:-1] not in instrList):
+                    instrList.append(line[:-1])
+    with open("DictSize.log", "+a") as logFile:
+        logFile.write(str(len(instrList)) + '\n')
+    print(f"Number of unique instructions: {len(instrList)}")
+
+
 # === Generator Mode Functions =========================================================================================
 def callDisassembler(argv: argparse.Namespace):
     fileList = createFileList(argv.input, argv.extension)
@@ -125,9 +140,12 @@ def callTransformer(argv: argparse.Namespace):
 if __name__ == "__main__":
     argv: argparse.Namespace = parseArgv()
 
-    if(argv.mode == "generator"):
-        callDisassembler(argv)
-    elif(argv.mode == "transformer"):
-        callTransformer(argv)
-    else:
-        raise ValueError("Bad mode of operation passed into program")
+    match(argv.mode):
+        case "evaluator":
+            callEvaluator(argv)
+        case "generator":
+            callDisassembler(argv)
+        case "transformer":
+            callTransformer(argv)
+        case _: 
+            raise ValueError("Bad mode of operation passed into program")

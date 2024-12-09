@@ -50,6 +50,7 @@ class DisasmTransformer():
     
 
     def callDataLoader(self):
+        print("    Creating dataset dictionary, this may take a very long time...")
         dsDict = self.dataLoader.getDatasetDict()
         self.tokenizedData = dsDict.map(createTokenization, batched=True)
         self.label2id, self.id2label = self.dataLoader.createLabelIdMappings()
@@ -57,11 +58,8 @@ class DisasmTransformer():
     
 
     def prepareDatasets(self) -> None:
-        print("    Preparing Datasets for Training (this may take a very long time)...")
         self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=32, collate_fn=gDataCollator)
-        print("    [Training Dataset Preparation Completed]")
         self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=32, collate_fn=gDataCollator)
-        print("    [Testing Dataset Preparation Completed]")
 
 
     def prepareModel(self) -> None:
