@@ -40,37 +40,29 @@ def genericizeDisasm(instruction) -> Tuple:
         splitInstr = instruction[3].split(' ')
     match(instruction[2]):
         # Single-operand instructions
-        case "call" | "je" | "jge" | "jle" | "jmp" | "jne":
-            if(''.join(splitInstr[0][:2]) == "0x"):
-                splitInstr[0] = "addr"
+        case "call" | "je" | "jge" | "jl" |  "jle" | "jmp" | "jne" | "jno" | "js" | "loope" | "ret":
+            if("[0x" in instruction[3]):
+                instruction[3] = "val_ptr"
+            elif("0x" in instruction[3]):
+                instruction[3] = "val"
         # Two-operand instructions
-        case "cmp" | "lea" | "mov" | "movsx":
+        case "add" | "and" | "cmp" | "lea" | "mov" | "movq" | "movsx" | "sub":
+            for i in range(0, 2):
             # First operand
-            if("dword ptr [e" in splitInstr[0]):
-                splitInstr[0] = "reg_dword_ptr"
-            elif("dword ptr [0x" in splitInstr[0]):
-                splitInstr[0] = "val_dword_ptr"
-            elif("byte ptr [e" in splitInstr[0]):
-                splitInstr[0] = "reg_byte_ptr"
-            elif("byte ptr [0x" in splitInstr[0]):
-                splitInstr[0] = "val_byte_ptr"
-            # This needs to be the last operation as it's too general
-            elif("[0x" in splitInstr[0]):
-                splitInstr[0] = "val_ptr"
-            # Second operand
-            if("dword ptr [e" in splitInstr[1]):
-                splitInstr[1] = "reg_dword_ptr"
-            elif("dword ptr [0x" in splitInstr[1]):
-                splitInstr[1] = "val_dword_ptr"
-            elif("byte ptr [e" in splitInstr[1]):
-                splitInstr[1] = "reg_byte_ptr"
-            elif("byte ptr [0x" in splitInstr[1]):
-                splitInstr[1] = "val_byte_ptr"
-            # This needs to be the last operation as it's too general
-            elif("[0x" in splitInstr[1]):
-                splitInstr[1] = "val_ptr"
-
-    instruction[3] = str(', '.join(splitInstr))
+                if("dword ptr [e" in splitInstr[i]):
+                    splitInstr[i] = "reg_dword_ptr"
+                elif("dword ptr [0x" in splitInstr[i]):
+                    splitInstr[i] = "val_dword_ptr"
+                elif("byte ptr [e" in splitInstr[i]):
+                    splitInstr[i] = "reg_byte_ptr"
+                elif("byte ptr [0x" in splitInstr[i]):
+                    splitInstr[i] = "val_byte_ptr"
+                # These operations are very general, so they need to be last
+                elif("[0x" in splitInstr[i]):
+                    splitInstr[i] = "val_ptr"
+                elif("0x" in splitInstr[i]):
+                    splitInstr[i] = "val"
+                instruction[3] = str(', '.join(splitInstr))
     return tuple(instruction)
 
 
@@ -182,15 +174,11 @@ class Disassembler(object):
         # Get the entry point virtual address to ensure the correct address offset appears
         epVirtualAddress = self._executable.OPTIONAL_HEADER.ImageBase + self._textSecStart
         # Iterate over machine code and convert to assembly
-        limit = self._instructionLimit
-        for instruction in self._disassembler.disasm_lite(exeCode, epVirtualAddress):
+        for instruction in self._disassembler.disasm_lite(exeCode, epVirtualAddress, count=self._instructionLimit):
             if(doGenericize):
                 instruction = genericizeDisasm(instruction)
             instruction = ' '.join(instruction[2:])
-            limit -= 1
             self._disasmData.append(instruction)
-            if limit <= 0:
-                break
 
 
     ##
