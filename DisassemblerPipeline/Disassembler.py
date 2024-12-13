@@ -16,6 +16,14 @@ from sys import argv
 from tqdm import tqdm
 from typing import List, Tuple
 
+ONE_OP_INSTR = [".byte", "aad", "aam", "call", "dec", "inc", "ja", "jae", "jb", "jbe", "je", "jg", "jge", "jl",  "jle",
+                "jmp", "jne", "jno", "jns", "jnp", "jo", "jp", "js", "not", "loope", "loopne", "push", "ret"]
+ONE_OP_PATTERNS = {"[0x": "val_ptr", "0x": "val"}
+
+TWO_OP_INSTR = ["adc", "add", "and", "arpl", "cmp", "lea", "mov", "movq", "movsx", "or", "out", "sbb", "sub", "test", "xchg", "xor"]
+TWO_OP_PATTERNS = {"dword ptr [e": "reg_dword_ptr", "dword ptr [0x": "val_dword_ptr", "byte ptr [e": "reg_byte_ptr",
+                   "byte ptr [0x": "val_byte_ptr", "[0x": "val_ptr", "0x": "val"}
+
 
 # == Function Definitions ==============================================================================================
 ##
@@ -33,36 +41,20 @@ from typing import List, Tuple
 # 
 #
 def genericizeDisasm(instruction) -> Tuple:
-    # This code is a monstrosity. TODO: Make it not so awful
     instruction = list(instruction)
-    splitInstr = instruction[3].split(', ')
-    if(splitInstr[0] == ''):
-        splitInstr = instruction[3].split(' ')
-    match(instruction[2]):
-        # Single-operand instructions
-        case "call" | "je" | "jge" | "jl" |  "jle" | "jmp" | "jne" | "jno" | "js" | "loope" | "ret":
-            if("[0x" in instruction[3]):
-                instruction[3] = "val_ptr"
-            elif("0x" in instruction[3]):
-                instruction[3] = "val"
-        # Two-operand instructions
-        case "add" | "and" | "cmp" | "lea" | "mov" | "movq" | "movsx" | "sub":
-            for i in range(0, 2):
-            # First operand
-                if("dword ptr [e" in splitInstr[i]):
-                    splitInstr[i] = "reg_dword_ptr"
-                elif("dword ptr [0x" in splitInstr[i]):
-                    splitInstr[i] = "val_dword_ptr"
-                elif("byte ptr [e" in splitInstr[i]):
-                    splitInstr[i] = "reg_byte_ptr"
-                elif("byte ptr [0x" in splitInstr[i]):
-                    splitInstr[i] = "val_byte_ptr"
-                # These operations are very general, so they need to be last
-                elif("[0x" in splitInstr[i]):
-                    splitInstr[i] = "val_ptr"
-                elif("0x" in splitInstr[i]):
-                    splitInstr[i] = "val"
-                instruction[3] = str(', '.join(splitInstr))
+    if(instruction[2] in ONE_OP_INSTR):
+        for key in ONE_OP_PATTERNS.keys():
+            if(key in instruction[3]):
+                instruction[3] = ONE_OP_PATTERNS[key]
+    elif(instruction[2] in TWO_OP_INSTR):
+        splitInstr = instruction[3].split(', ')
+        if(splitInstr[0] == ''):
+            splitInstr = instruction[3].split(' ')
+        for i in range(0, 2):
+            for key in TWO_OP_PATTERNS.keys():
+                if(key in splitInstr[i]):
+                    splitInstr[i] = TWO_OP_PATTERNS[key]
+            instruction[3] = str(', '.join(splitInstr))
     return tuple(instruction)
 
 

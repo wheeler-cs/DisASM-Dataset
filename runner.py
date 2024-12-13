@@ -25,12 +25,12 @@ def parseArgv() -> argparse.Namespace:
                         help="Target directory for input files",
                         type=str,
                         required=True)
-    # Disassembler arguments
     parser.add_argument("-l", "--limit",
-                        help="Limits the number of instructions saved from disassembly",
+                        help="[Generator] Limits the number of instructions disassembled\n[Evaluator] Limits the number of different instructions seen before stopping",
                         type=int,
                         required=False,
                         default=10_000)
+    # Generator arguments
     parser.add_argument("-t", "--threads",
                         help="Specifies the number of threads to use for disassembly",
                         type=int,
@@ -54,6 +54,10 @@ def parseArgv() -> argparse.Namespace:
                         default=5)
     parser.add_argument("-fc", "--forcecpu",
                         help="Force transformer training to only use CPU",
+                        required=False)
+    # Evaluator arguments
+    parser.add_argument("-s", "--summary",
+                        help="Write a summary of found commands to a file",
                         required=False)
     return parser.parse_args()
 
@@ -91,14 +95,30 @@ def createOutDirectory(originalDir: str, subdir: str) -> None:
 def callEvaluator(argv: argparse.Namespace) -> None:
     fileList = createFileList(argv.input, argv.extension)
     instrList = []
+    stopRead = False
     for file in tqdm(fileList):
+        if(stopRead):
+            print(f"Reached limit of {argv.limit} unique commands")
+            break
         with open(file, "r") as disasm:
             for line in disasm:
+                if(stopRead):
+                    break
                 if(line[:-1] not in instrList):
                     instrList.append(line[:-1])
+                    if(len(instrList) >= argv.limit) and (argv.limit != 0):
+                        stopRead = True
     with open("DictSize.log", "+a") as logFile:
+        if(stopRead):
+            logFile.write('*')
         logFile.write(str(len(instrList)) + '\n')
-    print(f"Number of unique instructions: {len(instrList)}")
+    if(argv.summary is not None):
+        instrList.sort()
+        with open("Summary.log", "w") as summaryFile:
+            for instruction in instrList:
+                summaryFile.write(instruction + '\n')
+    if not(stopRead):
+        print(f"Number of unique instructions: {len(instrList)}")
 
 
 # === Generator Mode Functions =========================================================================================
