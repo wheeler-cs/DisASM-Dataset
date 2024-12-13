@@ -12,17 +12,38 @@ from capstone import Cs, CS_ARCH_X86, CS_MODE_32, CS_MODE_64
 import os
 ## @see https://github.com/erocarrera/pefile/blob/wiki/UsageExamples.md#introduction
 from pefile import PE, PEFormatError
+import re
 from sys import argv
 from tqdm import tqdm
 from typing import List, Tuple
 
-ONE_OP_INSTR = [".byte", "aad", "aam", "call", "dec", "inc", "ja", "jae", "jb", "jbe", "je", "jg", "jge", "jl",  "jle",
+# TODO: Implement regex support to reduce the size and repetitiveness of this...
+ONE_OP_INSTR = [".byte", "aad", "aam", "bnd call", "bnd ja", "bnd jae", "bnd jb", "bnd jbe", "bnd je", "bnd jg",
+                "bnd jge", "bnd jl", "bnd jle", "bnd jmp", "bnd jne", "bnd jno", "bnd jns", "bnd jnp", "bnd jo",
+                "bnd jp", "bnd js",  "call", "dec", "inc", "ja", "jae", "jb", "jbe", "je", "jg", "jge", "jl",  "jle",
                 "jmp", "jne", "jno", "jns", "jnp", "jo", "jp", "js", "not", "loope", "loopne", "push", "ret"]
-ONE_OP_PATTERNS = {"[0x": "val_ptr", "0x": "val"}
 
-TWO_OP_INSTR = ["adc", "add", "and", "arpl", "cmp", "lea", "mov", "movq", "movsx", "or", "out", "sbb", "sub", "test", "xchg", "xor"]
-TWO_OP_PATTERNS = {"dword ptr [e": "reg_dword_ptr", "dword ptr [0x": "val_dword_ptr", "byte ptr [e": "reg_byte_ptr",
-                   "byte ptr [0x": "val_byte_ptr", "[0x": "val_ptr", "0x": "val"}
+TWO_OP_INSTR = ["adc", "add", "addps", "addss", "and", "andpd", "arpl", "bound", "bsr", "bt", "btr", "cmovae", "cmp", "lea", "mov",
+                "movq", "movsd", "movsx", "or", "out", "sbb", "sub", "test", "xchg", "xor"]
+
+OP_PATTERNS = {"qword ptr [e": "reg_qword_ptr",
+               "qword ptr [0x": "val_qword_ptr",
+               "dword ptr [e": "reg_dword_ptr",
+               "dword ptr [0x": "val_dword_ptr",
+               "word ptr [e": "reg_word_ptr",
+               "word ptr [0x": "val_word_ptr",
+               "byte ptr [e": "reg_byte_ptr",
+               "byte ptr [0x": "val_byte_ptr",
+               "byte ptr cs:": "reg_code_seg",
+               "byte ptr ds:": "reg_data_seg",
+               "byte ptr es:": "reg_extra_seg",
+               "byte ptr fs:": "reg_gen_seg",
+               "byte ptr gs:": "reg_gen_seg",
+               "byte ptr ss:": "reg_stack_seg",
+               "xmmword ptr [e": "reg_xmmword_ptr",
+               "xmmword ptr [0x": "val_xmmword_ptr",
+               "[0x": "val_ptr",
+               "0x": "val"}
 
 
 # == Function Definitions ==============================================================================================
@@ -43,17 +64,17 @@ TWO_OP_PATTERNS = {"dword ptr [e": "reg_dword_ptr", "dword ptr [0x": "val_dword_
 def genericizeDisasm(instruction) -> Tuple:
     instruction = list(instruction)
     if(instruction[2] in ONE_OP_INSTR):
-        for key in ONE_OP_PATTERNS.keys():
+        for key in OP_PATTERNS.keys():
             if(key in instruction[3]):
-                instruction[3] = ONE_OP_PATTERNS[key]
+                instruction[3] = OP_PATTERNS[key]
     elif(instruction[2] in TWO_OP_INSTR):
         splitInstr = instruction[3].split(', ')
         if(splitInstr[0] == ''):
             splitInstr = instruction[3].split(' ')
         for i in range(0, 2):
-            for key in TWO_OP_PATTERNS.keys():
+            for key in OP_PATTERNS.keys():
                 if(key in splitInstr[i]):
-                    splitInstr[i] = TWO_OP_PATTERNS[key]
+                    splitInstr[i] = OP_PATTERNS[key]
             instruction[3] = str(', '.join(splitInstr))
     return tuple(instruction)
 
@@ -189,9 +210,17 @@ class Disassembler(object):
                     disasmWrite.write(f"{instruction}{delimiter}")
 
 
-
     ##
+    # Modifies the target executable for disassembly.
     #
+    # @param self Pointer to calling class instance.
+    # @param inputFile Target file to be disassembled.
+    #
+    # The process for targeting a new executable file for disassembly requires initializing a new PE instance then
+    # calling the capstone framework.
+    #
+    # This method handles non-PE-format files by silently ignoring them. This is done by checking for the PEFormatError
+    # exception raised by pefile. The terminal receives a message in the event of a non-specific exception.
     #
     def changeTarget(self, inputFile: str) -> None:
         self._exeName = inputFile
@@ -201,13 +230,19 @@ class Disassembler(object):
             self._executable = PE(self._exeName, fast_load=True)
             self.disassemble()
         except PEFormatError as e:
-            pass
-            #print(f"Couldn't parse {self._exeName} due to formatting ({e})")
+            pass # Silently ignore non-PE files
         except Exception as e:
             print(f"Couldn't parse {self._exeName} for {e}")
 
+
     ##
+    # Iteratively disassembles a list of executable files.
     #
+    # @param self Pointer to calling class instance.
+    # @param inputList List of paths for files to be disassembled.
+    # @param outpuDir Target directory for disassembled text to be written to.
+    #
+    # WARN: The outputDir parameter currently does not do anything.
     #
     def processList(self, inputList: List[str], outputDir: str) -> None:
         for element in tqdm(inputList):
@@ -216,15 +251,6 @@ class Disassembler(object):
             higherDir = '/'.join(parsedName[:-1])
             newName = os.path.join(higherDir, "disasm", (parsedName[-1] + ".disasm"))
             self.dumpAssembly(newName, '\n')
-
-
-    ##
-    # Prints the information presented by `pefile.PE.dump_info()` to stdout.
-    #
-    # @param self Pointer to calling class instance.
-    #
-    def printReport(self) -> None:
-        print(self._executable.dump_info())
 
 
 

@@ -102,12 +102,11 @@ def callEvaluator(argv: argparse.Namespace) -> None:
             break
         with open(file, "r") as disasm:
             for line in disasm:
-                if(stopRead):
-                    break
                 if(line[:-1] not in instrList):
                     instrList.append(line[:-1])
                     if(len(instrList) >= argv.limit) and (argv.limit != 0):
                         stopRead = True
+                        break
     with open("DictSize.log", "+a") as logFile:
         if(stopRead):
             logFile.write('*')
