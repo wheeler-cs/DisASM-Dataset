@@ -67,14 +67,9 @@ class DisasmDataLoader():
             train, test = splitDataset(newDataset, 0.8)
             compiledTraining += train
             compiledTesting += test
-        trainDataset = Dataset(pa.Table.from_pydict({}))
-        testDataset = Dataset(pa.Table.from_pydict({}))
-        for element in compiledTraining:
-            trainDataset = trainDataset.add_item(element)
-        for element in compiledTesting:
-            testDataset = testDataset.add_item(element)
-        dsDict = DatasetDict({"train": trainDataset, "test": testDataset})
-        return dsDict
+        trainDataset = Dataset.from_list(compiledTraining)
+        testDataset = Dataset.from_list(compiledTesting)
+        return DatasetDict({"train": trainDataset, "test": testDataset})
 
 
     def createLabelIdMappings(self) -> Tuple[Dict[int, str], Dict[int, str]]:

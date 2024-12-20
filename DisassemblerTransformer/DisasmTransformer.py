@@ -8,7 +8,7 @@ from transformers.keras_callbacks import KerasMetricCallback
 from typing import Dict
 
 
-gTokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-base")
+gTokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-base", pad_token="\0", add_prefix_space=True)
 gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer, return_tensors="tf")
 
 

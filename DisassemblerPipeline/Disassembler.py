@@ -16,56 +16,52 @@ from sys import argv
 from tqdm import tqdm
 from typing import List, Tuple
 
-ONE_OP_INSTR = [".byte", "aad", "aam", "bnd call", "bnd ja", "bnd jae", "bnd jb", "bnd jbe", "bnd je", "bnd jg",
-                "bnd jge", "bnd jl", "bnd jle", "bnd jmp", "bnd jne", "bnd jno", "bnd jns", "bnd jnp", "bnd jo",
-                "bnd jp", "bnd js",  "call", "dec", "div", "inc", "ja", "jae", "jb", "jbe", "je", "jecxz", "jg", "jge", "jl",  "jle",
-                "jmp", "jne", "jno", "jns", "jnp", "jo", "jp", "js", "not", "loop", "loope", "loopne", "push", "ret"]
 
-TWO_OP_INSTR = ["adc", "add", "addps", "addsd", "addss", "and", "andpd", "arpl", "bound", "bsr", "bt", "btr", "cmova",
-                "cmovae", "cmovb", "cmovbe", "cmove", "cmovg", "cmovge", "cmovl", "cmovle", "cmovne", "cmovns", "cmp",
-                "cmpxchg", "comisd", "comiss", "cvtps2pd", "cvtps2pi", "cvtsd2ss", "cvtsi2sd", "enter", "lcall", "lea", "mov", "movq",
-                "movsd", "movsx", "or", "out", "sbb", "sub", "test", "xchg", "xor"]
-
-OP_PATTERNS = {"qword ptr [e": "reg_qword_ptr",
-               "qword ptr [0x": "val_qword_ptr",
-               "dword ptr [e": "reg_dword_ptr",
-               "dword ptr [0x": "val_dword_ptr",
-               "word ptr [e": "reg_word_ptr",
-               "word ptr [0x": "val_word_ptr",
-               "byte ptr [e": "reg_byte_ptr",
-               "byte ptr [0x": "val_byte_ptr",
-               "byte ptr cs:": "reg_code_seg",
-               "byte ptr ds:": "reg_data_seg",
-               "byte ptr es:": "reg_extra_seg",
-               "byte ptr fs:": "reg_gen_seg",
-               "byte ptr gs:": "reg_gen_seg",
-               "byte ptr ss:": "reg_stack_seg",
-               "xmmword ptr [e": "reg_xmmword_ptr",
-               "xmmword ptr [0x": "val_xmmword_ptr",
-               "esi": "mov_idx_reg",
-               "edi": "mov_idx_reg",
-               "al": "reg_low_half",
-               "bl": "reg_low_half",
-               "cl": "reg_low_half",
-               "dl": "reg_low_half",
-               "ah": "reg_high_half",
-               "bh": "reg_high_half",
-               "ch": "reg_high_half",
-               "dh": "reg_high_half",
-               "eax": "gen_reg",
-               "ebx": "gen_reg",
-               "ecx": "gen_reg",
-               "edx": "gen_reg",
-               "ebp": "stk_ptr",
-               "esp": "stk_ptr",
-               "xmm0": "reg_xmm",
-               "xmm1": "reg_xmm",
-               "xmm2": "reg_xmm",
-               "xmm3": "reg_xmm",
-               "xmm4": "reg_xmm",
-               "xmm5": "reg_xmm",
-               "xmm6": "reg_xmm",
-               "xmm7": "reg_xmm",
+OP_PATTERNS = {"qword ptr [":   "qword*",
+               "qword ptr fs:": "qword*",
+               "dword ptr [":   "dword*",
+               "dword ptr cs:": "dword*",
+               "dword ptr es:": "dword*",
+               "dword ptr fs:": "dword*",
+               "dword ptr gs:": "dword*",
+               "word ptr [":    "word*",
+               "byte ptr [":    "byte*",
+               "byte ptr cs:":  "byte*",
+               "byte ptr ds:":  "byte*",
+               "byte ptr es:":  "byte*",
+               "byte ptr fs:":  "byte*",
+               "byte ptr gs:":  "byte*",
+               "byte ptr ss:":  "byte*",
+               "xmmword ptr [": "xmm*",
+               "ptr [": "*",
+               "esi": "regI",
+               "edi": "regI",
+               "al": "reg16L",
+               "bl": "reg16L",
+               "cl": "reg16L",
+               "dl": "reg16L",
+               "ah": "reg16H",
+               "bh": "reg16H",
+               "ch": "reg16H",
+               "dh": "reg16H",
+               "eax": "reg32",
+               "ebx": "reg32",
+               "ecx": "reg32",
+               "edx": "reg32",
+               "ebp": "regStk",
+               "esp": "regStk",
+               "ax": "reg16",
+               "bx": "reg16",
+               "cx": "reg16",
+               "dx": "reg16",
+               "xmm0": "reg128",
+               "xmm1": "reg128",
+               "xmm2": "reg128",
+               "xmm3": "reg128",
+               "xmm4": "reg128",
+               "xmm5": "reg128",
+               "xmm6": "reg128",
+               "xmm7": "reg128",
                "0": "val",
                "1": "val",
                "2": "val",
@@ -98,6 +94,14 @@ OP_PATTERNS = {"qword ptr [e": "reg_qword_ptr",
 #
 def genericizeDisasm(instruction) -> Tuple:
     instruction = list(instruction)
+    splitOps = instruction[3].split(', ')
+    # I just love double for loops /s
+    for operand in enumerate(splitOps):
+        for key in OP_PATTERNS.keys():
+            if(key in operand[1]):
+                splitOps[operand[0]] = OP_PATTERNS[key]
+    instruction[3] = ", ".join(splitOps)
+    '''
     if(instruction[2] in ONE_OP_INSTR):
         for key in OP_PATTERNS.keys():
             if(key in instruction[3]):
@@ -111,6 +115,7 @@ def genericizeDisasm(instruction) -> Tuple:
                 if(key in splitInstr[i]):
                     splitInstr[i] = OP_PATTERNS[key]
             instruction[3] = str(', '.join(splitInstr))
+    '''
     return tuple(instruction)
 
 
