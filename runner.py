@@ -58,7 +58,8 @@ def parseArgv() -> argparse.Namespace:
     # Evaluator arguments
     parser.add_argument("-s", "--summary",
                         help="Write a summary of found commands to a file",
-                        required=False)
+                        required=False,
+                        default=True)
     return parser.parse_args()
 
 
