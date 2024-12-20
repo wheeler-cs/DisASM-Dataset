@@ -8,7 +8,7 @@ from transformers.keras_callbacks import KerasMetricCallback
 from typing import Dict
 
 
-gTokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-base", pad_token="\0", add_prefix_space=True)
+gTokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-base")
 gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer, return_tensors="tf")
 
 
@@ -58,8 +58,8 @@ class DisasmTransformer():
     
 
     def prepareDatasets(self) -> None:
-        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=32, collate_fn=gDataCollator)
-        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=32, collate_fn=gDataCollator)
+        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=self.batchSize, collate_fn=gDataCollator)
+        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=self.batchSize, collate_fn=gDataCollator)
 
 
     def prepareModel(self) -> None:
