@@ -77,9 +77,9 @@ class DisasmTransformer():
         metricCallback = KerasMetricCallback(metric_fn=computeMetrics, eval_dataset=self.testingSet)
         self.trainingHistory = self.model.fit(x=self.trainingSet, validation_data=self.testingSet, epochs=self.epochs, callbacks = [metricCallback])
         if(self.saveTraining):
-            self.saveTrainingResults(self.modelPath)
-        if(self.modelPath is not ""):
-             self.model.save_model(self.modelPath)
+            self.saveTrainingResults()
+        if(self.modelPath != ""):
+             self.model.save_pretrained(self.modelPath)
 
 
     def saveTrainingResults(self, outFile: str = "results.csv") -> None:
