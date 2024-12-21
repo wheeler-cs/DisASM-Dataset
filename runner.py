@@ -152,8 +152,7 @@ def callTransformer(argv: argparse.Namespace):
     dt.prepareDatasets()
     dt.prepareModel()
     dt.trainModel()
-
-
+    dt.saveTrainingResults()
 
 
 # === main =============================================================================================================

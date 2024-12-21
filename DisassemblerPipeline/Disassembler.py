@@ -101,21 +101,6 @@ def genericizeDisasm(instruction) -> Tuple:
             if(key in operand[1]):
                 splitOps[operand[0]] = OP_PATTERNS[key]
     instruction[3] = ", ".join(splitOps)
-    '''
-    if(instruction[2] in ONE_OP_INSTR):
-        for key in OP_PATTERNS.keys():
-            if(key in instruction[3]):
-                instruction[3] = OP_PATTERNS[key]
-    elif(instruction[2] in TWO_OP_INSTR):
-        splitInstr = instruction[3].split(', ')
-        if(splitInstr[0] == ''):
-            splitInstr = instruction[3].split(' ')
-        for i in range(0, 2):
-            for key in OP_PATTERNS.keys():
-                if(key in splitInstr[i]):
-                    splitInstr[i] = OP_PATTERNS[key]
-            instruction[3] = str(', '.join(splitInstr))
-    '''
     return tuple(instruction)
 
 

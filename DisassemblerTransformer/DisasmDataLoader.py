@@ -23,6 +23,7 @@ class DisasmDataLoader():
     
 
     def getClassesFromDirectories(self):
+        print("    Indexing files for training...")
         # Assume the name of the directory is the classification of the data
         for inode in listdir(self.dataDirectory):
             fullPath = path.join(self.dataDirectory, inode)
@@ -34,7 +35,6 @@ class DisasmDataLoader():
     def loadNumpyArrays(self, dataDirectory: str) -> List[np.array]:
         arrayList = list()
         # Iterate through files in the directory and load data from them
-        print(f"Loading {dataDirectory}...")
         for inode in tqdm(listdir(dataDirectory)):
             fullPath = path.join(dataDirectory, inode)
             if(path.isfile(fullPath)):

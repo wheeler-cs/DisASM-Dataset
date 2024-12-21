@@ -2,6 +2,7 @@ from DisassemblerTransformer.DisasmDataLoader import DisasmDataLoader
 
 import evaluate
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from transformers import create_optimizer, DataCollatorWithPadding, RobertaTokenizer, TFAutoModelForSequenceClassification
 from transformers.keras_callbacks import KerasMetricCallback
@@ -47,10 +48,12 @@ class DisasmTransformer():
                                                                           label2id=self.label2id)
         self.trainingSet = None
         self.testingSet  = None
+        # Metrics during training
+        self.trainingHistory = None
     
 
     def callDataLoader(self):
-        print("    Creating dataset dictionary, this may take a very long time...")
+        print("    Mapping datasets for dictionary...")
         dsDict = self.dataLoader.getDatasetDict()
         self.tokenizedData = dsDict.map(createTokenization, batched=True)
         self.label2id, self.id2label = self.dataLoader.createLabelIdMappings()
@@ -58,6 +61,7 @@ class DisasmTransformer():
     
 
     def prepareDatasets(self) -> None:
+        print("    Finalizing dataset preparation...")
         self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=self.batchSize, collate_fn=gDataCollator)
         self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=self.batchSize, collate_fn=gDataCollator)
 
@@ -69,7 +73,13 @@ class DisasmTransformer():
 
     def trainModel(self) -> None:
         metricCallback = KerasMetricCallback(metric_fn=computeMetrics, eval_dataset=self.testingSet)
-        self.model.fit(x=self.trainingSet, validation_data=self.testingSet, epochs=self.epochs, callbacks = [metricCallback])
+        self.trainingHistory = self.model.fit(x=self.trainingSet, validation_data=self.testingSet, epochs=self.epochs, callbacks = [metricCallback])
+
+
+    def saveTrainingResults(self, outFile: str = "results.csv") -> None:
+         historyFrame = pd.DataFrame(self.trainingHistory.history)
+         with open(outFile, 'w') as resultsFile:
+              historyFrame.to_csv(resultsFile)
 
 
 
