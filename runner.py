@@ -14,7 +14,8 @@ from typing import List
 # === General Functions ================================================================================================
 def parseArgv() -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="Disassembly Runner",
-                                     description="Perform dataset generation or transformer training")
+                                     description="Entrypoint for the disassembly-based transformer framework",
+                                     formatter_class=argparse.RawTextHelpFormatter)
     # Shared arguments
     parser.add_argument("-m", "--mode",
                         help="The mode of operation the program should run in",
@@ -25,11 +26,22 @@ def parseArgv() -> argparse.Namespace:
                         help="Target directory for input files",
                         type=str,
                         required=True)
+    parser.add_argument("-o", "--output",
+                        help="[Transformer] Location to write model after training",
+                        type=str,
+                        required=False,
+                        default="")
     parser.add_argument("-l", "--limit",
-                        help="[Generator] Limits the number of instructions disassembled\n[Evaluator] Limits the number of different instructions seen before stopping",
+                        help="[Evaluator] Limits the number of different instructions seen before stopping\n" + 
+                             "[Generator] Limits the number of instructions disassembled",
                         type=int,
                         required=False,
                         default=10_000)
+    parser.add_argument("-s", "--summary",
+                        help="[Evaluator] Write a summary of found commands to a file\n" +
+                             "[Transformer] Write the results of training to a file",
+                        required=False,
+                        default=True)
     # Generator arguments
     parser.add_argument("-t", "--threads",
                         help="Specifies the number of threads to use for disassembly",
@@ -55,11 +67,6 @@ def parseArgv() -> argparse.Namespace:
     parser.add_argument("-fc", "--forcecpu",
                         help="Force transformer training to only use CPU",
                         required=False)
-    # Evaluator arguments
-    parser.add_argument("-s", "--summary",
-                        help="Write a summary of found commands to a file",
-                        required=False,
-                        default=True)
     return parser.parse_args()
 
 
@@ -112,7 +119,7 @@ def callEvaluator(argv: argparse.Namespace) -> None:
         if(stopRead):
             logFile.write('*')
         logFile.write(str(len(instrList)) + '\n')
-    if(argv.summary is not None):
+    if(argv.summary is not ""):
         instrList.sort()
         with open("Summary.log", "w") as summaryFile:
             for instruction in instrList:
@@ -148,11 +155,14 @@ def callTransformer(argv: argparse.Namespace):
     from DisassemblerTransformer.DisasmTransformer import DisasmTransformer
     if argv.forcecpu is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    dt = DisasmTransformer(argv.input, argv.batchsize, argv.epochs)
+    dt = DisasmTransformer(dataDir=argv.input,
+                           modelPath=argv.output,
+                           batchSize=argv.batchsize,
+                           epochs=argv.epochs,
+                           saveTraining=argv.summary)
     dt.prepareDatasets()
     dt.prepareModel()
     dt.trainModel()
-    dt.saveTrainingResults()
 
 
 # === main =============================================================================================================

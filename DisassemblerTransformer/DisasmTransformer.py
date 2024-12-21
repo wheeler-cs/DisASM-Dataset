@@ -25,7 +25,7 @@ def computeMetrics(evalPrediction) -> None:
 
 
 class DisasmTransformer():
-    def __init__(self, dataDir: str, batchSize: int, epochs: int):
+    def __init__(self, dataDir: str = "./data", modelPath: str = "", batchSize: int = 8, epochs: int = 5, saveTraining: bool = False):
         # Data mapping and tokenization
         self.dataDirectory:          str = dataDir
         self.dataLoader: DisasmDataLoader = DisasmDataLoader(dataDir)
@@ -48,7 +48,9 @@ class DisasmTransformer():
                                                                           label2id=self.label2id)
         self.trainingSet = None
         self.testingSet  = None
-        # Metrics during training
+        # Training evaluation
+        self.modelPath: str = modelPath
+        self.saveTraining = saveTraining
         self.trainingHistory = None
     
 
@@ -74,12 +76,16 @@ class DisasmTransformer():
     def trainModel(self) -> None:
         metricCallback = KerasMetricCallback(metric_fn=computeMetrics, eval_dataset=self.testingSet)
         self.trainingHistory = self.model.fit(x=self.trainingSet, validation_data=self.testingSet, epochs=self.epochs, callbacks = [metricCallback])
+        if(self.saveTraining):
+            self.saveTrainingResults(self.modelPath)
+        if(self.modelPath is not ""):
+             self.model.save_model(self.modelPath)
 
 
     def saveTrainingResults(self, outFile: str = "results.csv") -> None:
-         historyFrame = pd.DataFrame(self.trainingHistory.history)
-         with open(outFile, 'w') as resultsFile:
-              historyFrame.to_csv(resultsFile)
+        historyFrame = pd.DataFrame(self.trainingHistory.history)
+        with open(outFile, 'w') as resultsFile:
+                historyFrame.to_csv(resultsFile)
 
 
 
