@@ -40,6 +40,7 @@ def parseArgv() -> argparse.Namespace:
     parser.add_argument("-s", "--summary",
                         help="[Evaluator] Write a summary of found commands to a file\n" +
                              "[Transformer] Write the results of training to a file",
+                        type=bool,
                         required=False,
                         default=True)
     # Generator arguments
@@ -119,7 +120,7 @@ def callEvaluator(argv: argparse.Namespace) -> None:
         if(stopRead):
             logFile.write('*')
         logFile.write(str(len(instrList)) + '\n')
-    if(argv.summary is not ""):
+    if(argv.summary):
         instrList.sort()
         with open("Summary.log", "w") as summaryFile:
             for instruction in instrList:
