@@ -2,6 +2,7 @@ from DisassemblerTransformer.DisasmDataLoader import DisasmDataLoader
 
 import evaluate
 import numpy as np
+from os import path
 import pandas as pd
 import tensorflow as tf
 from transformers import create_optimizer, DataCollatorWithPadding, RobertaTokenizer, TFAutoModelForSequenceClassification
@@ -64,8 +65,14 @@ class DisasmTransformer():
 
     def prepareDatasets(self) -> None:
         print("    Finalizing dataset preparation...")
-        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"], shuffle=True,  batch_size=self.batchSize, collate_fn=gDataCollator)
-        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],  shuffle=False, batch_size=self.batchSize, collate_fn=gDataCollator)
+        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"],
+                                                         shuffle=True,
+                                                         batch_size=self.batchSize,
+                                                         collate_fn=gDataCollator)
+        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],
+                                                         shuffle=False,
+                                                         batch_size=self.batchSize,
+                                                         collate_fn=gDataCollator)
 
 
     def prepareModel(self) -> None:
@@ -75,17 +82,43 @@ class DisasmTransformer():
 
     def trainModel(self) -> None:
         metricCallback = KerasMetricCallback(metric_fn=computeMetrics, eval_dataset=self.testingSet)
-        self.trainingHistory = self.model.fit(x=self.trainingSet, validation_data=self.testingSet, epochs=self.epochs, callbacks = [metricCallback])
+        self.trainingHistory = self.model.fit(x=self.trainingSet,
+                                              validation_data=self.testingSet,
+                                              epochs=self.epochs,
+                                              callbacks = [metricCallback])
         if(self.saveTraining):
             self.saveTrainingResults()
         if(self.modelPath != ""):
              self.model.save_pretrained(self.modelPath)
+    
+
+    def vectorizeInput(self, filePath: str) -> None:
+        # Load file into array
+        if(path.isfile(filePath)):
+            txtArray = []
+            with open(filePath) as txtFile:
+                for line in txtFile:
+                    txtArray.append(line[:-1])
+            npArray = np.array(txtArray)
+        else:
+             raise Exception("Unable to load input for vectorization")
+        # Prepare data for encoding
+        tokenizedInput = gTokenizer(npArray, truncation=True)
+        output = self.model(tokenizedInput)
+        print(output)
 
 
     def saveTrainingResults(self, outFile: str = "results.csv") -> None:
         historyFrame = pd.DataFrame(self.trainingHistory.history)
         with open(outFile, 'w') as resultsFile:
                 historyFrame.to_csv(resultsFile)
+    
+
+    def loadTrainingResults(self, inFile: str) -> None:
+         self.model = TFAutoModelForSequenceClassification.from_pretrained(inFile,
+                                                                           num_labels=2,
+                                                                           id2label=self.id2label,
+                                                                           label2id=self.label2id)
 
 
 

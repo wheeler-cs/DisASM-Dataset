@@ -8,10 +8,11 @@ from tqdm import tqdm
 from typing import Dict, List, Tuple
 
 
+# === DisasmDataLoader =================================================================================================
 class DisasmDataLoader():
     def __init__(self, inputDir: str = "./data"):
         self.dataDirectory = inputDir
-        self.datasets: DisasmDataset = list()
+        self.datasets: List[DisasmDataset] = list()
         self.loadDataset()
 
 
@@ -82,6 +83,7 @@ class DisasmDataLoader():
         return id2label, label2id
 
 
+# === DisasmDataset Class ==============================================================================================
 class DisasmDataset(object):
     def __init__(self, classification: str, encodedClass: int, data: List[np.array]):
         self.classification: str = classification
@@ -97,6 +99,7 @@ def splitDataset(dataset: List, percentage: float = 0.5) -> Tuple[List, List]:
         raise ValueError("Percentage must be a decimal between 0 and 1")
 
 
+# === Main =============================================================================================================
 if __name__ == "__main__":
     loader = DisasmDataLoader()
     datasetDictionary = loader.getDatasetDict()
