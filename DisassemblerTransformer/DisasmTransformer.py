@@ -9,9 +9,9 @@ from transformers import create_optimizer, DataCollatorWithPadding, RobertaToken
 from transformers.keras_callbacks import KerasMetricCallback
 from typing import Dict
 
-
-gTokenizer = RobertaTokenizer.from_pretrained("FacebookAI/roberta-base")
-gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer, return_tensors="tf")
+# Tokenizer and collator to be used later
+gTokenizer = None
+gDataCollator = None
 
 
 def createTokenization(data):
@@ -26,13 +26,15 @@ def computeMetrics(evalPrediction) -> None:
 
 
 class DisasmTransformer():
-    def __init__(self, dataDir: str = "./data", modelPath: str = "", batchSize: int = 8, epochs: int = 5, saveTraining: bool = False):
+    def __init__(self, modelType: str, dataDir: str, modelSavePath: str = "", batchSize: int = 8, epochs: int = 5, saveTraining: bool = False):
         # Data mapping and tokenization
         self.dataDirectory:          str = dataDir
         self.dataLoader: DisasmDataLoader = DisasmDataLoader(dataDir)
         self.id2label:    Dict[int, str] = dict()
         self.label2id:    Dict[str, int] = dict()
         self.tokenizedData = None
+        gTokenizer = RobertaTokenizer.from_pretrained(modelType)
+        gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer, return_tensors="tf")
         self.callDataLoader()
         # Model parameters
         self.batchSize:       int = batchSize
@@ -43,14 +45,14 @@ class DisasmTransformer():
                                                          num_warmup_steps=0,
                                                          num_train_steps=self.trainingSteps)
         # Transformer model
-        self.model = TFAutoModelForSequenceClassification.from_pretrained("FacebookAI/roberta-base",
+        self.model = TFAutoModelForSequenceClassification.from_pretrained(modelType,
                                                                           num_labels=2,
                                                                           id2label=self.id2label,
                                                                           label2id=self.label2id)
         self.trainingSet = None
         self.testingSet  = None
         # Training evaluation
-        self.modelPath: str = modelPath
+        self.modelPath: str = modelSavePath
         self.saveTraining = saveTraining
         self.trainingHistory = None
     

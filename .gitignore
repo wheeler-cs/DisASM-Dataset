@@ -1,7 +1,12 @@
+# Env files
 venv/
 __pycache__/
-
 .vscode/
 
+# Dataset
 data/
+
+# Process artifacts
 *.log
+*.csv
+*.h5

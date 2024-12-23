@@ -65,9 +65,14 @@ def parseArgv() -> argparse.Namespace:
                         type=int,
                         required=False,
                         default=5)
-    parser.add_argument("-fc", "--forcecpu",
+    parser.add_argument("--forcecpu",
                         help="Force transformer training to only use CPU",
                         required=False)
+    parser.add_argument("--model",
+                        help="Use a pretrained model for classification",
+                        type=str,
+                        required=False,
+                        default="FacebookAI/roberta-base")
     return parser.parse_args()
 
 
@@ -154,10 +159,10 @@ def callTransformer(argv: argparse.Namespace):
     print("[RUNNING TRANSFORMER]")
     # Importing tensorflow slows down the disassembler, even though it's not needed for that operation
     from DisassemblerTransformer.DisasmTransformer import DisasmTransformer
-    if argv.forcecpu is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    dt = DisasmTransformer(dataDir=argv.input,
-                           modelPath=argv.output,
+    if argv.forcecpu is not None: os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    dt = DisasmTransformer(modelType=argv.model,
+                           dataDir=argv.input,
+                           modelSavePath=argv.output,
                            batchSize=argv.batchsize,
                            epochs=argv.epochs,
                            saveTraining=argv.summary)
