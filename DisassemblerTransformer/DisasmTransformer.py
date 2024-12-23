@@ -33,7 +33,9 @@ class DisasmTransformer():
         self.id2label:    Dict[int, str] = dict()
         self.label2id:    Dict[str, int] = dict()
         self.tokenizedData = None
+        global gTokenizer
         gTokenizer = RobertaTokenizer.from_pretrained(modelType)
+        global gDataCollator
         gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer, return_tensors="tf")
         self.callDataLoader()
         # Model parameters
