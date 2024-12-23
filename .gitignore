@@ -10,3 +10,5 @@ data/
 *.log
 *.csv
 *.h5
+*.json
+*.txt

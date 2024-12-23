@@ -68,7 +68,6 @@ class DisasmTransformer():
     
 
     def prepareDatasets(self) -> None:
-        print("    Finalizing dataset preparation...")
         self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"],
                                                          shuffle=True,
                                                          batch_size=self.batchSize,
@@ -94,6 +93,8 @@ class DisasmTransformer():
             self.saveTrainingResults()
         if(self.modelPath != ""):
              self.model.save_pretrained(self.modelPath)
+             global gTokenizer
+             gTokenizer.save_pretrained(self.modelPath)
     
 
     def vectorizeInput(self, filePath: str) -> None:
