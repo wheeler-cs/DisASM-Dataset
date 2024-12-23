@@ -117,13 +117,6 @@ class DisasmTransformer():
         historyFrame = pd.DataFrame(self.trainingHistory.history)
         with open(outFile, 'w') as resultsFile:
                 historyFrame.to_csv(resultsFile)
-    
-
-    def loadTrainingResults(self, inFile: str) -> None:
-         self.model = TFAutoModelForSequenceClassification.from_pretrained(inFile,
-                                                                           num_labels=2,
-                                                                           id2label=self.id2label,
-                                                                           label2id=self.label2id)
 
 
 
