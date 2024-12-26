@@ -176,7 +176,8 @@ def callClassifier(argv: argparse.Namespace) -> None:
     from DisassemblerTransformer.DisasmClassifier import DisasmClassifier
     classifier = DisasmClassifier(modelType=argv.model,
                                   dataDir=argv.input)
-    classifier.classifyInput()
+    #classifier.classifyInput()
+    classifier.outputEncoder()
 
 
 # === main =============================================================================================================
