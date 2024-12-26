@@ -113,6 +113,13 @@ class DisasmTransformer():
         with open(outFile, 'w') as resultsFile:
                 historyFrame.to_csv(resultsFile)
 
+    
+    def loadPretrainedModel(self, modelType: str) -> None:
+        self.model = TFAutoModelForSequenceClassification.from_pretrained(modelType,
+                                                                          num_labels=2,
+                                                                          id2label=self.id2label,
+                                                                          label2id=self.label2id)
+
 
 
 if __name__ == "__main__":
