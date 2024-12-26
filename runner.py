@@ -174,10 +174,11 @@ def callTransformer(argv: argparse.Namespace):
 def callClassifier(argv: argparse.Namespace) -> None:
     print("[Running Classifier]")
     from DisassemblerTransformer.DisasmClassifier import DisasmClassifier
-    classifier = DisasmClassifier(modelType=argv.model,
-                                  dataDir=argv.input)
-    #classifier.classifyInput()
-    classifier.outputEncoder()
+    classifier = DisasmClassifier(modelType=argv.model)
+    classification = classifier.classifyInput(argv.input)
+    encTensor = classifier.outputEncoder(argv.input)
+    print(encTensor)
+    print(classification)
 
 
 # === main =============================================================================================================
