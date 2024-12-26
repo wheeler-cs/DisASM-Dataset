@@ -2,7 +2,7 @@ from DisassemblerTransformer.DisasmDataLoader import DisasmDataLoader
 
 import evaluate
 import numpy as np
-from os import path
+from os import listdir, path
 import pandas as pd
 import tensorflow as tf
 from transformers import create_optimizer, DataCollatorWithPadding, RobertaTokenizer, TFAutoModelForSequenceClassification
@@ -98,19 +98,14 @@ class DisasmTransformer():
     
 
     def vectorizeInput(self, filePath: str) -> None:
-        # Load file into array
-        if(path.isfile(filePath)):
-            txtArray = []
-            with open(filePath) as txtFile:
-                for line in txtFile:
-                    txtArray.append(line[:-1])
-            npArray = np.array(txtArray)
-        else:
-             raise Exception("Unable to load input for vectorization")
-        # Prepare data for encoding
-        tokenizedInput = gTokenizer(npArray, truncation=True)
-        output = self.model(tokenizedInput)
-        print(output)
+        for file in listdir(filePath):
+             if path.isdir(path.join(filePath, file)):
+                  continue
+             else:
+                  with open(path.join(filePath, file), 'r') as fileBuffer:
+                       text = fileBuffer.read()
+                       inputs = gTokenizer(text, return_tensors="tf")
+                       output = self.model(**inputs)
 
 
     def saveTrainingResults(self, outFile: str = "results.csv") -> None:
