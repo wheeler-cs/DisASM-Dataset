@@ -19,7 +19,7 @@ def parseArgv() -> argparse.Namespace:
     # Shared arguments
     parser.add_argument("-m", "--mode",
                         help="The mode of operation the program should run in",
-                        choices=["evaluator", "generator", "transformer"],
+                        choices=["classifier", "evaluator", "generator", "transformer"],
                         type=str,
                         required=True)
     parser.add_argument("-i", "--input",
@@ -171,11 +171,21 @@ def callTransformer(argv: argparse.Namespace):
     dt.trainModel()
 
 
+def callClassifier(argv: argparse.Namespace) -> None:
+    print("[Running Classifier]")
+    from DisassemblerTransformer.DisasmClassifier import DisasmClassifier
+    classifier = DisasmClassifier(modelType=argv.model,
+                                  dataDir=argv.input)
+    classifier.classifyInput()
+
+
 # === main =============================================================================================================
 if __name__ == "__main__":
     argv: argparse.Namespace = parseArgv()
 
     match(argv.mode):
+        case "classifier":
+            callClassifier(argv)
         case "evaluator":
             callEvaluator(argv)
         case "generator":
