@@ -19,7 +19,9 @@ class DisasmClassifier():
             else:
                 with open(fullPathName, 'r') as fileBuffer:
                     text = fileBuffer.read()
-                tokenizedInput = self.tokenizer(text, padding=True, truncation=True, return_tensors="tf")
+                text = text.split(sep='\n')
+                tokenizedInput = self.tokenizer(text, truncation=True, return_tensors="tf")
+                print(f"File: {file}")
                 logits = self.model.predict(tokenizedInput)[0]
                 prediction = logits.argmax(axis=-1)
                 print(self.config.id2label[prediction[0]])
