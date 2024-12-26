@@ -36,5 +36,7 @@ class DisasmClassifier():
                 text = text.split(sep='\n')
                 tokenizedInput = self.tokenizer(text, padding=True, truncation=True, return_tensors="tf")
                 output = self.model(**tokenizedInput, output_hidden_states=True)
-                hidden_states = output.hidden_states
-                print(hidden_states[-1])
+                hidden_state = output.hidden_states[-1]
+                del output
+                print(f"\nFile: {file}")
+                print(hidden_state)
