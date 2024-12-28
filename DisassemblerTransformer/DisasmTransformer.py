@@ -95,17 +95,6 @@ class DisasmTransformer():
              self.model.save_pretrained(self.modelPath)
              global gTokenizer
              gTokenizer.save_pretrained(self.modelPath)
-    
-
-    def vectorizeInput(self, filePath: str) -> None:
-        for file in listdir(filePath):
-             if path.isdir(path.join(filePath, file)):
-                  continue
-             else:
-                  with open(path.join(filePath, file), 'r') as fileBuffer:
-                       text = fileBuffer.read()
-                       inputs = gTokenizer(text, return_tensors="tf")
-                       output = self.model(**inputs)
 
 
     def saveTrainingResults(self, outFile: str = "results.csv") -> None:

@@ -6,7 +6,6 @@ Module providing facilities for leveraging a pre-trained model in the task of as
 
 
 import argparse
-import logging
 import os
 import tensorflow as tf
 from transformers import AutoConfig, TFAutoModelForSequenceClassification, AutoTokenizer
