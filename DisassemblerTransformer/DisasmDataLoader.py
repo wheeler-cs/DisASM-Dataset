@@ -3,7 +3,6 @@ from datasets.dataset_dict import DatasetDict
 from math import floor
 import numpy as np
 from os import listdir, path
-import pyarrow as pa
 from tqdm import tqdm
 from typing import Dict, List, Tuple
 

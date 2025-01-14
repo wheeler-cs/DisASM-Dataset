@@ -7,7 +7,6 @@ Module providing facilities for leveraging a pre-trained model in the task of as
 
 import argparse
 import os
-import tensorflow as tf
 from transformers import AutoConfig, TFAutoModelForSequenceClassification, AutoTokenizer
 
 
@@ -59,7 +58,7 @@ class DisasmClassifier(object):
             return self.config.id2label[prediction[0]]
 
 
-    def outputEncoder(self, filePath: str) -> None | tf.Tensor:
+    def outputEncoder(self, filePath: str):
         '''
         Utilize a pre-trained model in encoder-only mode to generate a tensor representation of an assembly file.
 

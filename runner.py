@@ -162,12 +162,9 @@ def callTransformer(argv: argparse.Namespace):
     if argv.forcecpu is not None: os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     dt = DisasmTransformer(modelType=argv.model,
                            dataDir=argv.input,
-                           modelSavePath=argv.output,
+                           savePath=argv.output,
                            batchSize=argv.batchsize,
-                           epochs=argv.epochs,
-                           saveTraining=argv.summary)
-    dt.prepareDatasets()
-    dt.prepareModel()
+                           epochs=argv.epochs)
     dt.trainModel()
 
 

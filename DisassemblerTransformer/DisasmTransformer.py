@@ -2,20 +2,18 @@ from DisassemblerTransformer.DisasmDataLoader import DisasmDataLoader
 
 import evaluate
 import numpy as np
-from os import listdir, path
-import pandas as pd
-import tensorflow as tf
-from transformers import create_optimizer, DataCollatorWithPadding, RobertaTokenizer, TFAutoModelForSequenceClassification
-from transformers.keras_callbacks import KerasMetricCallback
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding, Trainer, TrainingArguments
 from typing import Dict
 
-# Tokenizer and collator to be used later
-gTokenizer = None
+
+# --- Global Variables -------------------------------------------------------------------------------------------------
+gTokenizer    = None
 gDataCollator = None
 
 
+# --- Functions --------------------------------------------------------------------------------------------------------
 def createTokenization(data):
-        return gTokenizer(data["sequence"], truncation=True)
+        return gTokenizer(data["sequence"], padding=True, truncation=True, return_tensors="pt")
 
 
 def computeMetrics(evalPrediction) -> None:
@@ -25,91 +23,64 @@ def computeMetrics(evalPrediction) -> None:
     return accuracy.compute(predictions=predictions, references=labels)
 
 
+# --- DisasmTransformer Class ------------------------------------------------------------------------------------------
 class DisasmTransformer():
-    def __init__(self, modelType: str, dataDir: str, modelSavePath: str = "", batchSize: int = 8, epochs: int = 5, saveTraining: bool = False):
-        # Data mapping and tokenization
-        self.dataDirectory:          str = dataDir
-        self.dataLoader: DisasmDataLoader = DisasmDataLoader(dataDir)
+    def __init__(self, modelType: str, dataDir: str, savePath: str = "disasmTformer", batchSize: int = 8, epochs: int = 5):
+        # Model parameters
+        self.modelType = modelType
+        self.dataDir   = dataDir
+        self.savePath  = savePath
+        self.batchSize = batchSize
+        self.epochs    = epochs
+        self.setGlobals()
+        # Load dataset
         self.id2label:    Dict[int, str] = dict()
         self.label2id:    Dict[str, int] = dict()
         self.tokenizedData = None
-        global gTokenizer
-        gTokenizer = RobertaTokenizer.from_pretrained(modelType)
-        global gDataCollator
-        gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer, return_tensors="tf")
         self.callDataLoader()
-        # Model parameters
-        self.batchSize:       int = batchSize
-        self.epochs:          int = epochs
-        self.batchesPerEpoch: int = len(self.tokenizedData["train"]) // batchSize
-        self.trainingSteps:   int = int(self.batchesPerEpoch * self.epochs)
-        self.optimizer, self.schedule = create_optimizer(init_lr=2e-5,
-                                                         num_warmup_steps=0,
-                                                         num_train_steps=self.trainingSteps)
-        # Transformer model
-        self.model = TFAutoModelForSequenceClassification.from_pretrained(modelType,
-                                                                          num_labels=2,
-                                                                          id2label=self.id2label,
-                                                                          label2id=self.label2id)
-        self.trainingSet = None
-        self.testingSet  = None
-        # Training evaluation
-        self.modelPath: str = modelSavePath
-        self.saveTraining = saveTraining
-        self.trainingHistory = None
+        # Init model
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.modelType,
+                                                                        num_labels=len(self.id2label),
+                                                                        id2label=self.id2label,
+                                                                        label2id=self.label2id)
+        self.trainer = None
+        self.initTrainer()
+
+
+    def setGlobals(self) -> None:
+         global gTokenizer
+         gTokenizer = AutoTokenizer.from_pretrained(self.modelType)
+         global gDataCollator
+         gDataCollator = DataCollatorWithPadding(tokenizer=gTokenizer)
     
 
-    def callDataLoader(self):
-        print("    Mapping datasets for dictionary...")
-        dsDict = self.dataLoader.getDatasetDict()
-        self.tokenizedData = dsDict.map(createTokenization, batched=True)
-        self.label2id, self.id2label = self.dataLoader.createLabelIdMappings()
-        self.batchesPerEpoch = len(self.tokenizedData)
+    def callDataLoader(self) -> None:
+        dataLoader = DisasmDataLoader(self.dataDir)
+        setDict = dataLoader.getDatasetDict()
+        self.tokenizedData = setDict.map(createTokenization, batched=True)
+        self.label2id, self.id2label = dataLoader.createLabelIdMappings()
     
 
-    def prepareDatasets(self) -> None:
-        self.trainingSet = self.model.prepare_tf_dataset(self.tokenizedData["train"],
-                                                         shuffle=True,
-                                                         batch_size=self.batchSize,
-                                                         collate_fn=gDataCollator)
-        self.testingSet  = self.model.prepare_tf_dataset(self.tokenizedData["test"],
-                                                         shuffle=False,
-                                                         batch_size=self.batchSize,
-                                                         collate_fn=gDataCollator)
+    def initTrainer(self) -> None:
+        trainArgs = TrainingArguments(output_dir=self.savePath,
+                                       learning_rate=2e-5,
+                                       per_device_train_batch_size=self.batchSize,
+                                       per_device_eval_batch_size=self.batchSize,
+                                       num_train_epochs=self.epochs,
+                                       weight_decay=0.01,
+                                       eval_strategy="epoch",
+                                       save_strategy="epoch")
+        self.trainer = Trainer(model=self.model,
+                                args=trainArgs,
+                                train_dataset=self.tokenizedData["train"],
+                                eval_dataset=self.tokenizedData["test"],
+                                processing_class=gTokenizer,
+                                data_collator=gDataCollator,
+                                compute_metrics=computeMetrics)
 
-
-    def prepareModel(self) -> None:
-        print("    Compiling Model for Training...")
-        self.model.compile(optimizer=self.optimizer)
     
-
     def trainModel(self) -> None:
-        metricCallback = KerasMetricCallback(metric_fn=computeMetrics, eval_dataset=self.testingSet)
-        self.trainingHistory = self.model.fit(x=self.trainingSet,
-                                              validation_data=self.testingSet,
-                                              epochs=self.epochs,
-                                              callbacks = [metricCallback])
-        if(self.saveTraining):
-            self.saveTrainingResults()
-        if(self.modelPath != ""):
-             self.model.save_pretrained(self.modelPath)
-             global gTokenizer
-             gTokenizer.save_pretrained(self.modelPath)
-
-
-    def saveTrainingResults(self, outFile: str = "results.csv") -> None:
-        historyFrame = pd.DataFrame(self.trainingHistory.history)
-        with open(outFile, 'w') as resultsFile:
-                historyFrame.to_csv(resultsFile)
-
-    
-    def loadPretrainedModel(self, modelType: str) -> None:
-        self.model = TFAutoModelForSequenceClassification.from_pretrained(modelType,
-                                                                          num_labels=2,
-                                                                          id2label=self.id2label,
-                                                                          label2id=self.label2id)
-
-
-
-if __name__ == "__main__":
-     print("This module cannot be ran as a stand-alone script")
+         self.trainer.train()
+         self.model.save_pretrained(self.savePath)
+         global gTokenizer
+         gTokenizer.save_pretrained(self.savePath)
